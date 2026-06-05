@@ -1,35 +1,43 @@
 <?php
 namespace Nexph\Cache;
 
+use Nexph\Cache\Stores\ApcuStore;
+
 class Cache
 {
-    private array $store = [];
-
-    public function get(string $key, mixed $default = null): mixed
+    public static function get(string $key, mixed $default = null): mixed
     {
-        return $this->store[$key] ?? $default;
+        return ApcuStore::get($key, $default);
     }
 
-    public function set(string $key, mixed $value, ?int $ttl = null): bool
+    public static function set(string $key, mixed $value, int $ttl = 3600): bool
     {
-        $this->store[$key] = $value;
-        return true;
+        return ApcuStore::set($key, $value, $ttl);
     }
 
-    public function has(string $key): bool
+    public static function has(string $key): bool
     {
-        return isset($this->store[$key]);
+        return ApcuStore::get($key) !== null;
     }
 
-    public function delete(string $key): bool
+    public static function delete(string $key): bool
     {
-        unset($this->store[$key]);
-        return true;
+        return ApcuStore::delete($key);
     }
 
-    public function clear(): bool
+    public static function clear(): bool
     {
-        $this->store = [];
-        return true;
+        return ApcuStore::clear();
+    }
+
+    public static function remember(string $key, int $ttl, callable $callback): mixed
+    {
+        $value = self::get($key);
+        if ($value !== null) {
+            return $value;
+        }
+        $value = $callback();
+        self::set($key, $value, $ttl);
+        return $value;
     }
 }
